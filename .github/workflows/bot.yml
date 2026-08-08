@@ -1,0 +1,27 @@
+name: Yunyun Twitter Bot
+
+on:
+  schedule:
+    - cron: "0 */3 * * *"
+  workflow_dispatch:
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install tweepy
+
+      - name: Run bot
+        env:
+          X_OAUTH_TOKEN: ${{ secrets.X_OAUTH_TOKEN }}
+        run: python bot.py
