@@ -1,5 +1,6 @@
 import json
 import random
+import time
 import os
 import tweepy
 
@@ -34,10 +35,21 @@ text = tweet["text"]
 print(f"Posting: {text}")
 
 # Post to X using OAuth 2.0 User Context
-response = client.create_tweet(
-    text=text,
-    user_auth=False
-)
+for attempt in range(3):
+    try:
+        response = client.create_tweet(
+            text=text,
+            user_auth=False
+        )
+        break
+    except tweepy.TwitterServerError as e:
+        if attempt < 2:
+            wait_time = 2 ** attempt
+            print(f"X server error. Retrying in {wait_time} seconds...")
+            time.sleep(wait_time)
+        else:
+            raise
+        
 
 print(f"Posted successfully! Tweet ID: {response.data['id']}")
 
