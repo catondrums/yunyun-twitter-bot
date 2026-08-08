@@ -1,10 +1,10 @@
 import json
 import random
+import os
 import tweepy
 
 # Load OAuth 2.0 user access token
-with open("oauth_token.txt", "r", encoding="utf-8") as f:
-    user_access_token = f.read().strip()
+user_access_token = os.environ["X_OAUTH_TOKEN"]
 
 # Connect to X using OAuth 2.0 User Context
 client = tweepy.Client(user_access_token)
