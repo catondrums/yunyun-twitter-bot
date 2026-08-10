@@ -20,7 +20,19 @@ jobs:
 
       - name: Install dependencies
         run: pip install tweepy
+      - name: Install dependencies
+        run: pip install tweepy
 
+      - name: Check OAuth token
+        env:
+          X_OAUTH_TOKEN: ${{ secrets.X_OAUTH_TOKEN }}
+        run: |
+          python -c 'import os,hashlib; t=os.environ.get("X_OAUTH_TOKEN",""); print("GitHub token present:", bool(t)); print("GitHub token length:", len(t)); print("GitHub fingerprint:", hashlib.sha256(t.encode()).hexdigest()[:16])'
+
+      - name: Run bot
+        env:
+          X_OAUTH_TOKEN: ${{ secrets.X_OAUTH_TOKEN }}
+        run: python bot.py
       - name: Run bot
         env:
           X_OAUTH_TOKEN: ${{ secrets.X_OAUTH_TOKEN }}
