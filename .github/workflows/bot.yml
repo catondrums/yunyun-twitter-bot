@@ -1,39 +1,5 @@
-name: Yunyun Twitter Bot
-
-on:
-  schedule:
-    - cron: "17 */3 * * *"
-  workflow_dispatch:
-
-jobs:
-  post:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
-      - name: Install dependencies
-        run: pip install tweepy
-
-      - name: Check OAuth token
+      - name: Test X authentication directly
         env:
           X_OAUTH_TOKEN: ${{ secrets.X_OAUTH_TOKEN }}
         run: |
-          python -c 'import os,hashlib; t=os.environ.get("X_OAUTH_TOKEN",""); print("GitHub token present:", bool(t)); print("GitHub token length:", len(t)); print("GitHub fingerprint:", hashlib.sha256(t.encode()).hexdigest()[:16])'
-
-      - name: Test X authentication
-        env:
-          X_OAUTH_TOKEN: ${{ secrets.X_OAUTH_TOKEN }}
-        run: |
-          python -c 'import os,tweepy; c=tweepy.Client(os.environ["X_OAUTH_TOKEN"]); r=c.get_me(user_auth=False); print("X USER:", r.data); print("X ERRORS:", r.errors)'
-
-      - name: Run bot
-        env:
-          X_OAUTH_TOKEN: ${{ secrets.X_OAUTH_TOKEN }}
-        run: python bot.py
+          python -c 'import os,urllib.request; req=urllib.request.Request("https://api.x.com/2/users/me", headers={"Authorization":"Bearer "+os.environ["X_OAUTH_TOKEN"]}); print(urllib.request.urlopen(req).read().decode())'
