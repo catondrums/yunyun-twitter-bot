@@ -1,28 +1,37 @@
-name: Yunyun Twitter Bot
-
-on:
-  schedule:
-    - cron: "17 */3 * * *"
-  workflow_dispatch:
-
-jobs:
-  post:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
-      - name: Install Tweepy
-        run: pip install tweepy
-
-      - name: Test posting
+      - name: Test X posting directly
         env:
           X_OAUTH_TOKEN: ${{ secrets.X_OAUTH_TOKEN }}
         run: |
-          python -c 'import tweepy,os; c=tweepy.Client(os.environ["X_OAUTH_TOKEN"]); r=c.create_tweet(text="GitHub bot authentication test", user_auth=False); print("POSTED:", r.data)'
+          python - <<'PY'
+          import os
+          import urllib.request
+          import urllib.error
+          import json
+
+          token = os.environ["X_OAUTH_TOKEN"]
+
+          data = json.dumps({
+              "text": "GitHub bot authentication test"
+          }).encode("utf-8")
+
+          request = urllib.request.Request(
+              "https://api.x.com/2/tweets",
+              data=data,
+              headers={
+                  "Authorization": "Bearer " + token,
+                  "Content-Type": "application/json"
+              },
+              method="POST"
+          )
+
+          try:
+              response = urllib.request.urlopen(request)
+              print("STATUS:", response.status)
+              print("RESPONSE:", response.read().decode())
+
+          except urllib.error.HTTPError as e:
+              print("STATUS:", e.code)
+              print("HEADERS:", dict(e.headers))
+              print("RESPONSE:", e.read().decode())
+              raise
+          PY
