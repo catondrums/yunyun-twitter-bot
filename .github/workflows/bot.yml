@@ -18,10 +18,11 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install dependencies
+      - name: Install Tweepy
         run: pip install tweepy
 
-      - name: Run bot
+      - name: Test posting
         env:
           X_OAUTH_TOKEN: ${{ secrets.X_OAUTH_TOKEN }}
-        run: python bot.py
+        run: |
+          python -c 'import tweepy,os; c=tweepy.Client(os.environ["X_OAUTH_TOKEN"]); r=c.create_tweet(text="GitHub bot authentication test", user_auth=False); print("POSTED:", r.data)'
