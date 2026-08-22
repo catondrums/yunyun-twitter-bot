@@ -25,39 +25,68 @@ if not remaining:
     remaining = [tweet["id"] for tweet in tweets]
     random.shuffle(remaining)
 
-# Pick one random unused tweet
-tweet_id = remaining.pop()
+# Keep trying tweets until one is successfully posted
+while remaining:
+    # Pick one random unused tweet
+    tweet_id = remaining.pop()
 
-# Find the tweet's text
-tweet = next(tweet for tweet in tweets if tweet["id"] == tweet_id)
-text = tweet["text"]
+    # Find the tweet's text
+    tweet = next(tweet for tweet in tweets if tweet["id"] == tweet_id)
+    text = tweet["text"]
 
-print(f"Posting: {text}")
+    print(f"Posting: {text}")
 
-# Post to X using OAuth 2.0 User Context
-for attempt in range(3):
-    try:
-        response = client.create_tweet(
-            text=text,
-            user_auth=False
-        )
-        break
-    except tweepy.TwitterServerError as e:
-        if attempt < 2:
-            wait_time = 2 ** attempt
-            print(f"X server error. Retrying in {wait_time} seconds...")
-            time.sleep(wait_time)
-        else:
+    # Try posting, with retries for temporary X server errors
+    for attempt in range(3):
+        try:
+            response = client.create_tweet(
+                text=text,
+                user_auth=False
+            )
+
+            print(f"Posted successfully! Tweet ID: {response.data['id']}")
+
+            # Save state immediately after successful post
+            state["remaining"] = remaining
+
+            with open("state.json", "w", encoding="utf-8") as f:
+                json.dump(state, f, indent=2)
+
+            print(f"{len(remaining)} tweets remaining in this cycle.")
+            raise SystemExit(0)
+
+        except tweepy.Forbidden as e:
+            error_text = e.response.text if e.response is not None else str(e)
+
+            # X rejects duplicate tweet content with HTTP 403.
+            # Discard this tweet and move to the next one.
+            if "duplicate content" in error_text.lower():
+                print("X rejected this tweet as a duplicate.")
+                print("Skipping it and trying the next tweet.")
+                break
+
+            # Other 403 errors are unexpected and should stop the workflow.
+            print("X returned a 403 Forbidden error!")
+            print("Response:", error_text)
             raise
-        
 
-print(f"Posted successfully! Tweet ID: {response.data['id']}")
+        except tweepy.TwitterServerError as e:
+            print("X returned a server error!")
+            print("Status:", e.response.status_code)
+            print("Response:", e.response.text)
 
-# Only save the updated state after X successfully accepted the post
+            if attempt < 2:
+                wait_time = 2 ** attempt
+                print(f"Retrying in {wait_time} seconds...")
+                time.sleep(wait_time)
+            else:
+                raise
 
-state["remaining"] = remaining
+# If we get here, every remaining tweet was rejected/skipped.
+# Start a fresh cycle next time.
+state["remaining"] = []
 
 with open("state.json", "w", encoding="utf-8") as f:
     json.dump(state, f, indent=2)
 
-print(f"{len(remaining)} tweets remaining in this cycle.")
+print("No usable tweets remained. The next run will start a new cycle.")
